@@ -10,7 +10,7 @@ import UIKit
 class UserCell: UICollectionViewCell {
     
     let avatarImageView = GHAvatarImageView(frame: .zero)
-    let usernameLabel   = GHTitleLabel(textAlignment: .center, fontSize: 16)
+    let usernameLabel = GHTitleLabel(textAlignment: .center, fontSize: 16)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -21,7 +21,7 @@ class UserCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func set(user: SearchUserResult) {
+    func set(user: User) {
         avatarImageView.downloadImage(from: user.avatarUrl)
         usernameLabel.text = user.login
     }

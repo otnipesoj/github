@@ -16,9 +16,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(frame: windowScene.coordinateSpace.bounds)
         window?.windowScene = windowScene
-        window?.rootViewController = UsersViewController()
+        window?.rootViewController = UINavigationController(rootViewController: UsersViewController())
         window?.makeKeyAndVisible()
     }
+    
+//    func configureNavigationBar() {
+//        UINavigationBar.appearance().tintColor = .systemBlue
+//    }
 
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.

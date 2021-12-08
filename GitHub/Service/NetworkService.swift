@@ -18,7 +18,7 @@ extension Endpoint {
         urlComponents.scheme = "https"
         urlComponents.host = "api.github.com"
         urlComponents.path = path
-        urlComponents.queryItems = queryItems
+        if (!queryItems.isEmpty) { urlComponents.queryItems = queryItems }
         
         return urlComponents.url
     }
@@ -26,18 +26,18 @@ extension Endpoint {
 
 class NetworkService {
     static let shared = NetworkService()
-    private let pageSize = 30
     private let baseURL = "https://api.github.com/"
-    let cache           = NSCache<NSString, UIImage>()
-    let decoder         = JSONDecoder()
+    let pageSize = 50
+    let cache = NSCache<NSString, UIImage>()
+    let decoder = JSONDecoder()
     
     private init() {
-        decoder.keyDecodingStrategy  = .convertFromSnakeCase
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .iso8601
     }
     
-    func searchUsers(by query: String?, page: Int) async throws -> [SearchUserResult] {
-        var queryItems: [URLQueryItem] = []
+    func searchUsers(by query: String?, page: Int) async throws -> [User] {
+        var queryItems: [URLQueryItem] = [URLQueryItem(name: "per_page", value: String(pageSize)), URLQueryItem(name: "page", value: String(page))]
         
         if let query = query, !query.isEmpty {
             queryItems.append(URLQueryItem(name: "q", value: query))
@@ -51,12 +51,44 @@ class NetworkService {
         
         let (data, response) = try await URLSession.shared.data(from: url)
         
+        guard let response = response as? HTTPURLResponse else {
+            throw GHError.invalidResponse
+        }
+        
+        guard response.statusCode == 200 else {
+            switch response.statusCode {
+            case 403:
+                throw GHError.rateLimitExceeded
+            default:
+                throw GHError.invalidResponse
+            }
+        }
+        
+        do {
+            let result = try decoder.decode(SearchUsersResult.self, from: data)
+            return result.items
+        } catch {
+            throw GHError.invalidData
+        }
+    }
+    
+    func getUserInfo(for username: String) async throws -> User {
+        let endpoint = Endpoint(path: "/users/\(username)")
+        
+        guard let url = endpoint.url else {
+            throw GHError.invalidUsername
+        }
+        
+        print(url)
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
         guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
             throw GHError.invalidResponse
         }
         
         do {
-            return try decoder.decode([SearchUserResult].self, from: data)
+            return try decoder.decode(User.self, from: data)
         } catch {
             throw GHError.invalidData
         }

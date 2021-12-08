@@ -15,9 +15,9 @@ class UsersViewController: DataLoadingViewController {
     
     enum Section { case main }
     
-    var users: [SearchUserResult] = []
+    var users: [User] = []
     
-    var page = 0
+    var page = 1
     var hasMoreUsers = true
     var isSearching = false
     var isLoadingMoreUsers = false
@@ -25,7 +25,7 @@ class UsersViewController: DataLoadingViewController {
     var timer: Timer?
     
     var collectionView: UICollectionView!
-    var dataSource: UICollectionViewDiffableDataSource<Section, SearchUserResult>!
+    var dataSource: UICollectionViewDiffableDataSource<Section, User>!
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -47,7 +47,7 @@ class UsersViewController: DataLoadingViewController {
     
     private func configureViewController() {
         view.backgroundColor = .systemBackground
-        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.prefersLargeTitles = false
     }
     
     private func configureSearchController() {
@@ -55,7 +55,9 @@ class UsersViewController: DataLoadingViewController {
         searchController.searchBar.delegate = self
         searchController.searchBar.placeholder = "Search for a username"
         searchController.obscuresBackgroundDuringPresentation = false
+        searchController.hidesNavigationBarDuringPresentation = false
         navigationItem.searchController = searchController
+        navigationItem.hidesSearchBarWhenScrolling = false
     }
     
     private func configureCollectionView() {
@@ -67,22 +69,28 @@ class UsersViewController: DataLoadingViewController {
     }
     
     private func configureDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<Section, SearchUserResult>(collectionView: collectionView, cellProvider: { (collectionView, indexPath, user) -> UICollectionViewCell? in
+        dataSource = UICollectionViewDiffableDataSource<Section, User>(collectionView: collectionView, cellProvider: { (collectionView, indexPath, user) -> UICollectionViewCell? in
             let cell: UserCell = collectionView.dequeueReusableCell(for: indexPath)
             cell.set(user: user)
             return cell;
         })
     }
     
-    private func updateUI(with users: [SearchUserResult]) {
-        if users.count < 20 { self.hasMoreUsers = false }
-        
+    private func updateUI(with users: [User]) {
+        if users.count < NetworkService.shared.pageSize { self.hasMoreUsers = false }
         self.users.append(contentsOf: users)
-        self.updateData(on: self.users)
+        
+        if self.users.isEmpty {
+            self.showEmptyStateView(with: "There is no users", in: self.view)
+            return
+        } else {
+            self.dismissEmptyStateView()
+            DispatchQueue.main.async { self.updateData(on: self.users) }
+        }
     }
     
-    private func updateData(on users: [SearchUserResult]) {
-        var snapshot = NSDiffableDataSourceSnapshot<Section, SearchUserResult>()
+    private func updateData(on users: [User]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, User>()
         snapshot.appendSections([.main])
         snapshot.appendItems(users)
         self.dataSource.apply(snapshot, animatingDifferences: true)
@@ -98,15 +106,18 @@ class UsersViewController: DataLoadingViewController {
                 updateUI(with: users)
                 dismissLoadingView()
             } catch {
-                if let ghError = error as? GHError {
-                    presentAlert(title: "Bad Stuff Happend", message: ghError.rawValue, buttonTitle: "Ok")
-                } else {
-                    presentDefaultError()
+                if let ghError = error as? GHError, ghError == .rateLimitExceeded {
+                    let alert = UIAlertController(title: "Error", message: ghError.rawValue, preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Default action"), style: .default))
+                    self.present(alert, animated: true, completion: nil)
                 }
                 
+                updateUI(with: [])
                 dismissLoadingView()
             }
         }
+        
+        isLoadingMoreUsers = false
     }
 }
 
@@ -122,6 +133,15 @@ extension UsersViewController: UICollectionViewDelegate {
             page += 1
             getUsers(username: navigationItem.searchController?.searchBar.text, page: page)
         }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let user = users[indexPath.item]
+        let destinationViewController = UserInfoViewController()
+        destinationViewController.username = user.login
+        destinationViewController.delegate = self
+        let navigationController = UINavigationController(rootViewController: destinationViewController)
+        present(navigationController, animated: true)
     }
 }
 
@@ -141,9 +161,9 @@ extension UsersViewController: UISearchBarDelegate {
 
             self.isSearching = true
             self.hasMoreUsers = true
-            self.page = 0
+            self.page = 1
             self.users.removeAll()
-            self.collectionView.scrollToItem(at: IndexPath(item: 0, section: 0), at: .top, animated: true)
+            self.collectionView.scrollToTop(animated: true)
             self.getUsers(username: searchText, page: self.page)
         })
     }
@@ -155,9 +175,9 @@ extension UsersViewController: UISearchBarDelegate {
     private func restartUsersLoad() {
         self.isSearching = false
         self.hasMoreUsers = true
-        self.page = 0
+        self.page = 1
         self.users.removeAll()
-        self.collectionView.scrollToItem(at: IndexPath(item: 0, section: 0), at: .top, animated: true)
+        self.collectionView.scrollToTop(animated: true)
         self.getUsers(page: self.page)
     }
 }

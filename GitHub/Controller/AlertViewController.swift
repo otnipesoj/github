@@ -12,7 +12,7 @@ class AlertViewController: UIViewController {
     let containerView = GHAlertContainerView()
     let titleLabel = GHTitleLabel(textAlignment: .center, fontSize: 20)
     let messageLabel = GHBodyLabel(textAlignment: .center)
-    let actionButton = GHButton(color: .systemPink, title: "Ok", systemImageName: "checkmark.circle")
+    let actionButton = GHButton(color: .systemBlue, title: "Ok", systemImageName: "checkmark.circle")
     
     var alertTitle: String?
     var message: String?
@@ -22,9 +22,9 @@ class AlertViewController: UIViewController {
     
     init(title: String, message: String, buttonTitle: String) {
         super.init(nibName: nil, bundle: nil)
-        self.alertTitle     = title
-        self.message        = message
-        self.buttonTitle    = buttonTitle
+        self.alertTitle = title
+        self.message = message
+        self.buttonTitle = buttonTitle
     }
     
     required init?(coder: NSCoder) {
@@ -34,10 +34,7 @@ class AlertViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.black.withAlphaComponent(0.75)
-        view.addSubview(containerView)
-        view.addSubview(titleLabel)
-        view.addSubview(actionButton)
-        view.addSubview(messageLabel)
+        view.addSubviews(containerView, titleLabel, actionButton, messageLabel)
         
         configureContainerView()
         configureTitleLabel()

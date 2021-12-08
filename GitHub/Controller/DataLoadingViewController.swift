@@ -10,6 +10,7 @@ import UIKit
 class DataLoadingViewController: UIViewController {
 
     var containerView: UIView!
+    var emptyStateView: GHEmptyStateView!
     
     func showLoadingView() {
         containerView = UIView(frame: view.bounds)
@@ -38,9 +39,27 @@ class DataLoadingViewController: UIViewController {
             return
         }
         
-        DispatchQueue.main.async {
-            self.containerView.removeFromSuperview()
-            self.containerView = nil
+        self.containerView.removeFromSuperview()
+        self.containerView = nil
+    }
+    
+    func showEmptyStateView(with message: String, in view: UIView) {
+        if (emptyStateView != nil) {
+            return
         }
+        
+        emptyStateView = GHEmptyStateView(message: message)
+        emptyStateView.frame = view.bounds
+        emptyStateView.backgroundColor = .systemBackground
+        view.addSubview(emptyStateView)
+    }
+    
+    func dismissEmptyStateView() {
+        if (emptyStateView == nil) {
+            return
+        }
+        
+        self.emptyStateView.removeFromSuperview()
+        self.emptyStateView = nil
     }
 }

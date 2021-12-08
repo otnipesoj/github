@@ -12,4 +12,9 @@ extension UICollectionView {
         let cell = dequeueReusableCell(withReuseIdentifier: T.reuseIdentifier, for: indexPath)
         return cell as! T
     }
+    
+    func scrollToTop(animated: Bool) {
+        let topContentOffset = CGPoint(x: -safeAreaInsets.left, y: -safeAreaInsets.top)
+        setContentOffset(topContentOffset, animated: animated)
+    }
 }

@@ -7,7 +7,6 @@
 
 import Foundation
 
-struct SearchUserResult: Decodable, Hashable {
-    let login: String
-    let avatarUrl: String
+struct SearchUsersResult: Decodable {
+    let items: [User]
 }
